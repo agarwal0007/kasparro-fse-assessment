@@ -1,0 +1,12 @@
+{
+  "run_id": "780d3514-b989-4d48-a59a-4872d77549c7",
+  "split": "check",
+  "agent_version": "v2",
+  "provider": "fake",
+  "model": "fake-rule-based-v1",
+  "scheduled_count": 10,
+  "ok_count": 10,
+  "error_count": 0,
+  "total_latency_ms": 4.9559170147404075,
+  "metrics": null
+}

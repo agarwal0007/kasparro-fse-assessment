@@ -1,0 +1,6 @@
+[development/v1] run_id=bddaad63-ad50-4f1d-8265-9d4254174545 scheduled=40 ok=40 error=0
+    G=376 P=298 M=203 C=26 extraction_f1=0.602 joint_f1=0.077 macro_f1=0.040
+[development/v2] run_id=2bd7eb41-c909-4747-bcc7-08f54f8cedaa scheduled=40 ok=40 error=0
+    G=376 P=298 M=203 C=26 extraction_f1=0.602 joint_f1=0.077 macro_f1=0.040
+[check/v1] run_id=48cca765-4082-44c0-bb6c-c274da38f85c scheduled=10 ok=10 error=0
+[check/v2] run_id=780d3514-b989-4d48-a59a-4872d77549c7 scheduled=10 ok=10 error=0

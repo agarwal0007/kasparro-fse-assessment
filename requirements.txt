@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+httpx
+openai
+langfuse
+pytest
+pytest-asyncio
+anyio
