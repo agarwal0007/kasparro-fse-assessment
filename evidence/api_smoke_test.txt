@@ -1,0 +1,20 @@
+Manual API check, 2026-10-19. Run with: uvicorn app.main:app on a COPY of kasparro.db,
+no provider keys set (so live-model paths stop at the provider and return 502).
+
+GET  /evaluation-runs/188e0a99-d6cd-4db5-b0c3-ac6d684fe347   -> 200  dev v1: run metadata + metrics + 40 answer rows
+                                                                 (29 ok / 11 error) + 195 claim rows, in answer/span order
+GET  /evaluation-runs/04d657d6-85d6-4ffc-89e6-183f8d141689   -> 200  check v2, metrics null
+GET  /evaluation-runs/00000000-0000-0000-0000-000000000000   -> 404  {"detail":"Run not found."}
+GET  /evaluation-runs/not-a-uuid                             -> 422  {"detail":"run_id must be a valid UUID."}
+POST /classify  valid A01 input, no provider key             -> 502  {"detail":"No live LLM provider is configured."}
+POST /classify  with gold field "claims"                     -> 422  Request may not include gold/claim-list fields
+POST /classify  with gold field "expected_label"             -> 422  Request may not include gold/claim-list fields
+POST /classify  unknown primary brand "nope"                 -> 404  {"detail":"Unknown primary brand: 'nope'"}
+POST /classify  agent_version "v9"                           -> 422  Input should be 'v1' or 'v2'
+POST /classify  missing ai_answer                            -> 422  Field required
+POST /evaluation-runs  split "test"                          -> 422  Input should be 'development' or 'check'
+POST /evaluation-runs  check/v1, no provider key             -> 502  {"detail":"No live LLM provider is configured."}
+
+Not exercised over HTTP: 200 /classify and 201 /evaluation-runs with a live model, and 504 timeout.
+The same orchestrator code path produced the four live runs via scripts/run_live.py; timeout/retry
+behaviour is covered with fakes in tests/test_fake_provider_agent.py.

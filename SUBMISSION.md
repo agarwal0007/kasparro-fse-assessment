@@ -35,6 +35,8 @@ Full detail: `runs/regression_analysis.md`.
 | `runs/live_*.json` | Summaries written by `scripts/run_live.py` at run time |
 | `runs/regression_analysis.md` / `.json` | v1 vs v2: full split, controlled subset, per-label, per-answer table, label flips |
 | `runs/test_output.txt` | Actual `pytest -v` output (47 passed) |
+| `evidence/api_smoke_test.txt` | Manual HTTP check of every endpoint and status code against the live-run DB |
+| `evidence/langfuse/langfuse_traces_live_runs.csv` | Sanitized Langfuse export of all four live runs |
 | `data/CHECKSUMS.txt` | SHA-256 of the three issued CSVs (also stored on every run row) |
 
 `kasparro.db` is not committed (`*.db` is ignored). The report files are the
@@ -135,9 +137,23 @@ the check runs. This is still not a fully blind benchmark.
   example: A01 v1 `5f426bc10b97406e7cfff9d64dc2d08b`, where the model read
   "Mini is listed at INR 1,200 less than Plus" as contradicted although the
   facts give 2499 − 1299 = 1200 (expected supported; v2 fixed this one).
-- **Still to add:** sanitized exports or screenshots of those two traces, for a
-  reviewer without Langfuse access. They must come from the Langfuse UI using
-  the account owner's login (see Unfinished work).
+- **Sanitized export for reviewers without access:**
+  `evidence/langfuse/langfuse_traces_live_runs.csv`, a Langfuse events export
+  filtered to the four live runs: 299 observations (102 traces: 40 answers + 1
+  run summary per development run, 10 per check run). Per run:
+  dev v1 = 41 SPAN / 40 GENERATION / 39 TOOL, dev v2 = 41 / 40 / 38, each check
+  run = 10 / 10 / 10. Generations carry Gemini token usage; development rows
+  carry `extraction_f1` / `joint_f1` (and `run_joint_f1` 0.651 / 0.605 on the
+  summary traces); check rows carry no scores. The Langfuse public key that the
+  SDK stamps into metadata was redacted; no secret key or model key appears.
+  Filter on `traceId = e5fa0060e09243fbaaf4446b84a8211b` to see the diagnosis
+  trace (A02 v1: tool call, generation with 5996 input / 670 output tokens,
+  joint_f1 0.75 = 2·6/(6+10)).
+- Caveat: observations are written after each answer finishes, so Langfuse's
+  own `latencyMs` is ~0. Real per-answer latency is in `answer_results.latency_ms`
+  and the reports. Cost is not available from the provider and is not invented.
+- Earlier pipeline-validation and quota-failed attempts exist in the Langfuse
+  project but are excluded from this export.
 
 ## AI assistance disclosure
 
@@ -176,11 +192,11 @@ regression analysis, diagnosis, docs). Total is roughly 1 h 45 min.
    keys, parameterized queries) are dialect-agnostic, but every run and test
    used SQLite, because no Postgres server was available. To use Postgres, set
    `DATABASE_URL=postgresql+psycopg2://…` and install `psycopg2-binary`.
-3. **Langfuse exports/screenshots** of the diagnosis traces are not yet in the
-   repository.
-4. **No Anthropic adapter.** OpenAI and Gemini are implemented.
-5. **API tests** cover validation and error codes (422/404/502), and
-   persistence is covered through the orchestrator. There is no full HTTP round
-   trip `POST /evaluation-runs` → `GET /evaluation-runs/{id}` with a fake provider.
-6. `runs.source_revision` is not populated.
-7. The v3 extraction change described above is not built.
+3. **No Anthropic adapter.** OpenAI and Gemini are implemented.
+4. **API tests** cover validation and error codes (422/404/502), and
+   persistence is covered through the orchestrator. Every endpoint was also hit
+   manually over HTTP (`evidence/api_smoke_test.txt`). A successful 200
+   `/classify` and 201 `/evaluation-runs` over HTTP were not exercised, because
+   they need a live key.
+5. `runs.source_revision` is not populated.
+6. The v3 extraction change described above is not built.
