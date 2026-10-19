@@ -24,6 +24,39 @@ class Claim:
     reason: str
 
 
+def resolve_claim_offsets(raw_claims: list[dict], ai_answer: str) -> list[dict]:
+    """
+    The model reports only a "quote" (exact text); it never reports character
+    offsets ("Do not rely on the model to count characters"). This locates
+    each quote's exact position in ai_answer, returning the same dicts with
+    start_char/end_char added. A cursor advances past each resolved match so
+    that if the identical sentence occurs more than once, successive claims
+    resolve to successive occurrences (in the order the model listed them,
+    left to right) rather than every claim collapsing onto the first
+    occurrence - this is "resolving repeated quote occurrences from source
+    context." Raises ValidationError if a quote isn't found verbatim at all.
+    """
+    resolved = []
+    cursor = 0
+    for i, raw in enumerate(raw_claims):
+        if not isinstance(raw, dict) or "quote" not in raw:
+            raise ValidationError(f"claim[{i}] missing required field 'quote'")
+        quote = raw["quote"]
+        if not isinstance(quote, str) or not quote:
+            raise ValidationError(f"claim[{i}] 'quote' must be a non-empty string")
+
+        idx = ai_answer.find(quote, cursor)
+        if idx == -1:
+            idx = ai_answer.find(quote)  # not found ahead of the cursor - try from the start
+        if idx == -1:
+            raise ValidationError(f"claim[{i}] quote not found verbatim in ai_answer: {quote!r}")
+
+        end_char = idx + len(quote)
+        cursor = end_char
+        resolved.append({**raw, "start_char": idx, "end_char": end_char})
+    return resolved
+
+
 def validate_claims(raw_claims: list[dict], answer_id: str, ai_answer: str, known_fact_ids: set[str]) -> list[Claim]:
     """Raises ValidationError on any contract violation. Returns validated,
     sorted Claim objects on success - all or nothing (an invalid response

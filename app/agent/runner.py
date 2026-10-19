@@ -6,12 +6,13 @@ spans, and difficulty tags never enter any message sent to the model.
 """
 import asyncio
 import json
+import os
 import time
 from dataclasses import dataclass, field
 
 from app.agent.provider import ModelTurnResult, PermanentProviderError, TransientProviderError
 from app.agent.tools import TOOL_NAME, TOOL_SCHEMA, FactExecutor, ToolError
-from app.agent.validation import Claim, ValidationError, validate_claims
+from app.agent.validation import Claim, ValidationError, resolve_claim_offsets, validate_claims
 from app.config import MAX_ATTEMPTS_PER_TURN, MAX_TURNS_PER_ANSWER, PROVIDER_TIMEOUT_SECONDS
 from app.harness.csv_loader import AnswerRecord
 
@@ -47,7 +48,7 @@ class AnswerOutcome:
     turns_used: int
 
 
-RETRY_DELAY_SECONDS = 0.5
+RETRY_DELAY_SECONDS = float(os.environ.get("RETRY_DELAY_SECONDS", "0.5"))
 
 
 async def _complete_turn_with_retry(provider, messages, tools, semaphore) -> tuple:
@@ -157,7 +158,10 @@ async def run_agent_on_answer(
         try:
             parsed = json.loads(result.final_content)
             raw_claims = parsed["claims"]
-            claims = validate_claims(raw_claims, answer.answer_id, answer.ai_answer, known_fact_ids)
+            # The model reports only "quote" text; Python - not the model -
+            # locates the exact offsets before validation ever sees a span.
+            located_claims = resolve_claim_offsets(raw_claims, answer.ai_answer)
+            claims = validate_claims(located_claims, answer.answer_id, answer.ai_answer, known_fact_ids)
         except (json.JSONDecodeError, KeyError, TypeError, ValidationError) as e:
             return AnswerOutcome(
                 answer_id=answer.answer_id,

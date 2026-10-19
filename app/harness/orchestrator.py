@@ -43,10 +43,27 @@ def build_provider(provider_override=None):
     if provider_override is not None:
         return provider_override, "fake", "fake-rule-based-v1"
 
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if LLM_PROVIDER == "openai" and api_key:
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY")
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+
+    if LLM_PROVIDER == "openai" and openai_key:
         from app.agent.provider import OpenAIProvider
-        return OpenAIProvider(model=LLM_MODEL, api_key=api_key), "openai", LLM_MODEL
+        return OpenAIProvider(model=LLM_MODEL, api_key=openai_key), "openai", LLM_MODEL
+
+    if LLM_PROVIDER == "gemini" and gemini_key:
+        from app.agent.provider import GeminiProvider
+        return GeminiProvider(model=LLM_MODEL, api_key=gemini_key), "gemini", LLM_MODEL
+
+    # LLM_PROVIDER unset/mismatched but a key exists anyway - pick whichever is available.
+    if openai_key:
+        from app.agent.provider import OpenAIProvider
+        return OpenAIProvider(model=LLM_MODEL, api_key=openai_key), "openai", LLM_MODEL
+    if gemini_key:
+        from app.agent.provider import GeminiProvider
+        return GeminiProvider(model=LLM_MODEL, api_key=gemini_key), "gemini", LLM_MODEL
+    if anthropic_key:
+        raise RuntimeError("ANTHROPIC_API_KEY is set but no AnthropicProvider is implemented yet.")
 
     # No live key available: fall back to a deterministic, rule-based FakeProvider
     # script generator so the pipeline can still be exercised end to end. This is

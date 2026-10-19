@@ -45,9 +45,7 @@ shape:
 {
   "claims": [
     {
-      "start_char": <int>,
-      "end_char": <int>,
-      "quote": "<the exact substring of ai_answer from start_char to end_char>",
+      "quote": "<the exact factual sentence, copied verbatim from ai_answer>",
       "label": "supported" | "contradicted" | "unknown",
       "fact_ids": ["<fact_id>", ...],
       "reason": "<at most two sentences>"
@@ -56,14 +54,19 @@ shape:
 }
 
 Rules for the output:
-- start_char is inclusive, end_char is exclusive, both are zero-based Unicode
-  code-point offsets into the EXACT ai_answer string you were given.
-- quote must equal ai_answer[start_char:end_char] exactly, with no leading or
-  trailing whitespace, and must include the claim's final punctuation.
+- Do NOT report character offsets or counts of any kind. You are not reliable
+  at counting characters, and a Python program - not you - locates each
+  quote's exact position in ai_answer and validates it after you respond.
+  Your only job for "quote" is to copy the sentence's exact characters,
+  including its final punctuation, with no leading or trailing whitespace.
+- If the IDENTICAL sentence text appears more than once in ai_answer (e.g. in
+  a direct comparison that restates a phrase), that is fine - just copy the
+  exact text for each occurrence you are classifying as its own claim; the
+  caller resolves which occurrence is which from the order you list them in
+  and the surrounding context.
 - fact_ids must only contain fact_id values you actually received from
   get_brand_facts. An empty list is valid when no fact is relevant.
-- Claims must be non-overlapping. You do not need to sort them; the caller
-  sorts by start_char.
+- List claims in the order they appear in ai_answer, left to right.
 - If the answer truly contains no factual claims, return {"claims": []}.
 
 You have at most 3 turns total (including tool-calling turns) to finish. Use

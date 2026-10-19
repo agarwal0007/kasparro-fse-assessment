@@ -1,0 +1,12 @@
+{
+  "run_id": "04d657d6-85d6-4ffc-89e6-183f8d141689",
+  "split": "check",
+  "agent_version": "v2",
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-lite",
+  "scheduled_count": 10,
+  "ok_count": 10,
+  "error_count": 0,
+  "total_latency_ms": 14536.311333999038,
+  "metrics": null
+}

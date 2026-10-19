@@ -1,10 +1,14 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-pydantic
-httpx
-openai
-langfuse
-pytest
-pytest-asyncio
-anyio
+# Exact versions used for the submitted live runs and test output.
+fastapi==0.146.0
+uvicorn[standard]==0.54.0
+SQLAlchemy==2.1.5
+pydantic==2.14.1
+httpx==0.28.1
+openai==3.35.1
+google-genai==2.31.0
+langfuse==5.0.2
+pytest==9.1.1
+pytest-asyncio==1.4.0
+anyio==4.15.1
+# For PostgreSQL (DATABASE_URL=postgresql+psycopg2://...), also install:
+#   psycopg2-binary

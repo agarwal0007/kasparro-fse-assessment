@@ -74,3 +74,36 @@ def test_real_fact_id_accepted():
 
 def test_empty_claims_list_is_valid():
     assert validate_claims([], "A01", ANSWER, KNOWN_FACTS) == []
+
+
+# --- resolve_claim_offsets: Python locates quotes, the model never reports offsets ---
+
+from app.agent.validation import resolve_claim_offsets
+
+
+def test_resolve_claim_offsets_locates_a_single_occurrence():
+    resolved = resolve_claim_offsets([{"quote": SENTENCE_1, "label": "unknown", "fact_ids": [], "reason": "x"}], ANSWER)
+    assert resolved[0]["start_char"] == S1_START
+    assert resolved[0]["end_char"] == S1_END
+
+
+def test_resolve_claim_offsets_advances_past_repeated_identical_quotes():
+    # The same sentence twice in a row - Python must resolve the SECOND claim
+    # to the SECOND occurrence, not collapse both onto the first.
+    repeated = SENTENCE_1 + " " + SENTENCE_1
+    raw = [
+        {"quote": SENTENCE_1, "label": "unknown", "fact_ids": [], "reason": "x"},
+        {"quote": SENTENCE_1, "label": "unknown", "fact_ids": [], "reason": "x"},
+    ]
+    resolved = resolve_claim_offsets(raw, repeated)
+    assert resolved[0]["start_char"] == 0
+    assert resolved[1]["start_char"] == len(SENTENCE_1) + 1
+    assert resolved[0]["end_char"] != resolved[1]["end_char"]
+
+
+def test_resolve_claim_offsets_rejects_a_quote_not_present_verbatim():
+    with pytest.raises(ValidationError):
+        resolve_claim_offsets(
+            [{"quote": "this text does not appear anywhere", "label": "unknown", "fact_ids": [], "reason": "x"}],
+            ANSWER,
+        )
